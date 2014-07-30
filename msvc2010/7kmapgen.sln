@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "7kmapgen", "7kmapgen.vcxproj", "{1C85EC27-5992-4E1F-85B0-67708B41AFB4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1C85EC27-5992-4E1F-85B0-67708B41AFB4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1C85EC27-5992-4E1F-85B0-67708B41AFB4}.Debug|Win32.Build.0 = Debug|Win32
+		{1C85EC27-5992-4E1F-85B0-67708B41AFB4}.Release|Win32.ActiveCfg = Release|Win32
+		{1C85EC27-5992-4E1F-85B0-67708B41AFB4}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
