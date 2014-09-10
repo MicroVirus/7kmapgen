@@ -1,11 +1,40 @@
-Seven Kingdoms: Ancient Adversaries - Map generator
-----------------------------------------------------
+Map Generator for Seven Kingdoms: Ancient Adversaries
+-----------------------------------------------------
 
-Based on Release version 2.14.4 of Seven Kingdoms: Ancient Adversaries
-Project website: www.7kfans.com
+Version: Proof of concept
+License: GPLv3
+Based on 7kaa release 2.14.4 (project website: www.7kfans.com)
 
-Currently the only supported way to build is using Microsoft Visual Studio 2010,
-and the only supported platform is Windows.
-All the code is included directly from the full game, meaning much of it is not
-needed at all for the map generator. However, the effort of removing all but the
-relevant code is not worth it.
+
+This is a map generator for 7kaa, allowing you to generate random maps
+and get a preview of how it will look. If you like the map, you can copy
+the random seed value that created this map and use it in 7kaa to start
+a game on your chosen map.
+
+The current version is nothing more than a proof of concept. As such, it
+is not yet functional as a map geneator. Next step is to actually make it
+interactive so you can cycle through maps, view the seed value and select
+options that affect map generation.
+
+7kmapgen was created by hijacking 7kaa and reusing almost all of the code.
+Only minor changes to the original codebase have occurred, mostly wrecking
+out Window & SDL stuff to prevent 7kaa from actually drawing.
+
+
+A project file for Microsoft Visual Studio C++ 2010 is supplied with the
+project, and currently this is the only supported build method.
+NOTE: The makefiles are still those of 7kaa, and thus are not up-to-date /
+capable of building 7kmapgen.
+
+To build this version you'll need ENet, SDL2 and OpenAL32, just like 7kaa.
+For steps on how to set up your build environment, I refer you to the README
+file of my fork of the 7kaa project:
+    https://github.com/MicroVirus/7kaa
+
+Note that 7kmapgen does not provide the OpenAL32 library files, but you can
+directly copy this from my fork.
+
+
+For any questions, remarks, suggestion or to share your work, please visit
+the 7kaa open source project at
+   http://www.7kfans.com/forums/index.php
