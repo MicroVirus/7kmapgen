@@ -959,7 +959,8 @@ void Sys::disp_map()
 	war_point_array.draw_dot();
 	tornado_array.draw_dot();
 
-	world.map_matrix->draw_square();		// draw a square on the map for current zoomed area
+	// 7kmapgen: don't draw the zoom square
+	//world.map_matrix->draw_square();		// draw a square on the map for current zoomed area
 
 	//------- blt the map area to the front screen --------//
 
