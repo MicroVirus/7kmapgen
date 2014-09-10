@@ -37,6 +37,9 @@
     <Filter Include="Source Files\video">
       <UniqueIdentifier>{da594d09-001b-4a1a-be6a-05afeccd9f12}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\mapgen">
+      <UniqueIdentifier>{b77229d0-4b96-4376-9241-3db2cd6a8ffa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\ALL.h">
@@ -1604,6 +1607,9 @@
     </ClCompile>
     <ClCompile Include="..\src\client\OTownNetwork.cpp">
       <Filter>Source Files\client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\mapgen\mapgen.cpp">
+      <Filter>Source Files\mapgen</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

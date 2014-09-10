@@ -152,6 +152,8 @@ public:
 	void		deinit_directx();
 	void		deinit_objects();
 
+	// 7kmapgen:
+	void		run_mapgen();
 	void		run(int=0);
 	void		yield();
 	void		yield_wsock_msg();

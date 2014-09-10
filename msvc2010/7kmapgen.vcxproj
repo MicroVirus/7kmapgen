@@ -597,6 +597,7 @@
     <ClCompile Include="..\src\imgfun\I_READ.cpp" />
     <ClCompile Include="..\src\imgfun\I_SNOW.cpp" />
     <ClCompile Include="..\src\input\sdl\OMOUSE.cpp" />
+    <ClCompile Include="..\src\mapgen\mapgen.cpp" />
     <ClCompile Include="..\src\multiplayer\common\multiplayer.cpp" />
     <ClCompile Include="..\src\multiplayer\common\OERRCTRL.cpp" />
     <ClCompile Include="..\src\multiplayer\common\OREMOTE.cpp" />
