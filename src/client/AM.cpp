@@ -109,6 +109,10 @@
 #include <locale.h>
 #include "gettext.h"
 
+// Mapgen
+void mapgen();
+
+
 //------- define game version constant --------//
 
 	const char *GAME_VERSION_STR = SKVERSION;
@@ -319,12 +323,6 @@ int main(int argc, char **argv)
 	textdomain(PACKAGE);
 #endif
 
-	const char *lobbyJoinCmdLine = "-join";
-	const char *lobbyHostCmdLine = "-host";
-	const char *lobbyNameCmdLine = "-name";
-	char *join_host = NULL;
-	int lobbied = 0;
-
 	sys.set_config_dir();
 
 	//try to read from CONFIG.DAT, moved to AM.CPP
@@ -338,84 +336,17 @@ int main(int argc, char **argv)
 	//----- read command line arguments -----//
 
 	for (int i = 0; i < argc; i++) {
-		if (!strcmp(argv[i], lobbyJoinCmdLine)) {
-			if (lobbied) {
-				ERR("You cannot specify multiple -host or -join options.\n");
-				return 1;
-			}
-			if (i >= argc - 1) {
-				ERR("The %s switch requires a hostname parameter.\n", lobbyJoinCmdLine);
-				return 1;
-			}
-			lobbied = 1;
-			join_host = argv[i+1];
-			i++;
-		} else if (!strcmp(argv[i], lobbyHostCmdLine)) {
-			if (lobbied) {
-				ERR("You cannot specify multiple -host or -join options.\n");
-				return 1;
-			}
-			lobbied = 1;
-		} else if (!strcmp(argv[i], lobbyNameCmdLine)) {
-			if (i >= argc - 1) {
-				ERR("The %s switch requires a hostname parameter.\n", lobbyNameCmdLine);
-				return 1;
-			}
-			strncpy(config.player_name, argv[i+1], config.PLAYER_NAME_LEN);
-			config.player_name[config.PLAYER_NAME_LEN] = 0;
-			i++;
-		}
+		// Examin command line here
 	}
-
-#ifdef ENABLE_INTRO_VIDEO
-	//----------- play movie ---------------//
-
-	if (!sys.set_game_dir())
-		return 1;
-
-	if (!lobbied)
-	{
-		String movieFileStr;
-		movieFileStr = DIR_MOVIE;
-		movieFileStr += "INTRO.AVI";
-
-		video.set_skip_on_fail();
-
-		// ###### begin Gilbert 29/10 #####//
-		if( !misc.is_file_exist("SKIPAVI.SYS") && misc.is_file_exist(movieFileStr) )
-		// ###### end Gilbert 29/10 #####//
-		{
-			//---------- play the movie now ---------//
-
-			video.init();
-
-			if( video.init_success )
-			{
-				video.play_until_end( movieFileStr, hInstance, 60 );
-			}
-			else
-			{
-				// display a message box (note:sys.main_hwnd is not valid)
-				// MessageBox( NULL, "Cannot initialize ActiveMovie",
-				//   "Seven Kingdoms", MB_OK | MB_ICONWARNING | MB_DEFBUTTON1 | MB_TASKMODAL );
-			}
-
-			video.deinit();
-		}
-	}
-#endif // ENABLE_INTRO_VIDEO
 
 	if( !sys.init() )
 		return FALSE;
 
 	err.set_extra_handler( extra_error_handler );   // set extra error handler, save the game when a error happens
 
-	if (!lobbied)
-		game.main_menu();
-#ifndef DISABLE_MULTI_PLAYER
-	else
-		game.multi_player_menu(lobbied, join_host);
-#endif // DISABLE_MULTI_PLAYER
+	// 7kmapgen: We take over from here
+	//game.main_menu();
+	mapgen();
 
 	sys.deinit();
 
