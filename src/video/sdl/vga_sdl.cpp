@@ -37,10 +37,6 @@ char    VgaBase::use_back_buf = 0;
 char    VgaBase::opaque_flag  = 0;
 VgaBuf* VgaBase::active_buf   = &vga_front;      // default: front buffer
 
-namespace
-{
-   int window_pitch;
-}  // namespace
 
 //-------- Begin of function VgaSDL::VgaSDL ----------//
 
@@ -73,76 +69,6 @@ int VgaSDL::init()
    if (SDL_Init(SDL_INIT_VIDEO))
       return 0;
 
-   SDL_DisplayMode mode;
-   int window_width = 1024;
-   int window_height = 768;
-
-   if (SDL_GetDesktopDisplayMode(0, &mode) == 0)
-   {
-      if (mode.h < 1024)
-      {
-         window_width = 800;
-         window_height = 600;
-      }
-   }
-   else
-   {
-      ERR("Could not get desktop display mode: %s\n", SDL_GetError());
-      SDL_Quit();
-      return 0;
-   }
-
-   if (SDL_CreateWindowAndRenderer(window_width,
-                                   window_height,
-                                   video_mode_flags,
-                                   &window,
-                                   &renderer) < 0)
-   {
-      ERR("Could not create window and renderer: %s\n", SDL_GetError());
-      SDL_Quit();
-      return 0;
-   }
-
-   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-   SDL_RenderSetLogicalSize(renderer, VGA_WIDTH, VGA_HEIGHT);
-
-   SDL_RendererInfo info;
-   if (SDL_GetRendererInfo(renderer, &info) == 0)
-   {
-      MSG("Name of renderer: %s\n", info.name);
-      MSG("Using software fallback: %s\n", info.flags & SDL_RENDERER_SOFTWARE ? "yes" : "no");
-      MSG("Using hardware acceleration: %s\n", info.flags & SDL_RENDERER_ACCELERATED ? "yes" : "no");
-      MSG("V-sync: %s\n", info.flags & SDL_RENDERER_PRESENTVSYNC ? "on" : "off");
-      MSG("Rendering to texture support: %s\n", info.flags & SDL_RENDERER_TARGETTEXTURE ? "yes" : "no");
-      MSG("Maximum texture width: %d\n", info.max_texture_width);
-      MSG("Maximum texture height: %d\n", info.max_texture_height);
-   }
-
-   Uint32 window_pixel_format = SDL_GetWindowPixelFormat(window);
-   if (window_pixel_format == SDL_PIXELFORMAT_UNKNOWN)
-   {
-      ERR("Unknown pixel format: %s\n", SDL_GetError());
-      SDL_Quit();
-      return 0;
-   }
-   MSG("Pixel format: %s\n", SDL_GetPixelFormatName(window_pixel_format));
-
-   window_pitch = VGA_WIDTH * SDL_BYTESPERPIXEL(window_pixel_format);
-
-   // Cannot use SDL_PIXELFORMAT_INDEX8:
-   //   Palettized textures are not supported
-   texture = SDL_CreateTexture(renderer,
-                               window_pixel_format,
-                               SDL_TEXTUREACCESS_STREAMING,
-                               VGA_WIDTH,
-                               VGA_HEIGHT);
-   if (!texture)
-   {
-      ERR("Could not create texture: %s\n", SDL_GetError());
-      SDL_Quit();
-      return 0;
-   }
-
    front = SDL_CreateRGBSurface(0,
                                 VGA_WIDTH,
                                 VGA_HEIGHT,
@@ -153,47 +79,6 @@ int VgaSDL::init()
       SDL_Quit();
       return 0;
    }
-
-   int desktop_bpp = 0;
-   if (SDL_PIXELTYPE(window_pixel_format) == SDL_PIXELTYPE_PACKED32)
-   {
-      desktop_bpp = 32;
-   }
-   else if (SDL_PIXELTYPE(window_pixel_format) == SDL_PIXELTYPE_PACKED16)
-   {
-      desktop_bpp = 16;
-   }
-   else if (SDL_PIXELTYPE(window_pixel_format) == SDL_PIXELTYPE_PACKED8)
-   {
-      desktop_bpp = 8;
-   }
-   else
-   {
-      ERR("Unsupported pixel type\n");
-      SDL_Quit();
-      return 0;
-   }
-
-   target = SDL_CreateRGBSurface(0,
-                                 VGA_WIDTH,
-                                 VGA_HEIGHT,
-                                 desktop_bpp,
-                                 0, 0, 0, 0);
-   if (!target)
-   {
-      SDL_Quit();
-      return 0;
-   }
-
-   icon = SDL_LoadBMP(DEFAULT_DIR_IMAGE "7k_icon.bmp");
-   if (icon)
-   {
-      Uint32 colorkey;
-      colorkey = SDL_MapRGB(icon->format, 0, 0, 0);
-      SDL_SetColorKey(icon, SDL_TRUE, colorkey);
-      SDL_SetWindowIcon(window, icon);
-   }
-   SDL_SetWindowTitle(window, WIN_TITLE);
 
    init_pal(DIR_RES"PAL_STD.RES");
 
@@ -266,17 +151,8 @@ void VgaSDL::deinit()
    vga_front.deinit();
 
    if (vga_color_table) delete vga_color_table;
-   SDL_FreeSurface(target);
-   target = NULL;
    SDL_FreeSurface(front);
    front = NULL;
-   SDL_DestroyTexture(texture);
-   texture = NULL;
-   window_pitch = 0;
-   SDL_DestroyRenderer(renderer);
-   renderer = NULL;
-   SDL_DestroyWindow(window);
-   window = NULL;
    SDL_Quit();
    video_mode_flags = SDL_WINDOW_HIDDEN;
 }
@@ -517,20 +393,6 @@ int VgaSDL::is_full_screen()
 // The previous front surface is freed by SDL_SetVideoMode.
 void VgaSDL::toggle_full_screen()
 {
-   int result = 0;
-
-   if (!is_full_screen()) {
-      result = SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-      video_mode_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
-   } else {
-      result = SDL_SetWindowFullscreen(window, 0);
-      video_mode_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
-   }
-   if (result < 0) {
-      ERR("Could not toggle fullscreen: %s\n", SDL_GetError());
-      return;
-   }
-
    refresh_palette();
    sys.need_redraw_flag = 1;
 }
@@ -540,17 +402,5 @@ void VgaSDL::toggle_full_screen()
 //-------- Beginning of function VgaSDL::flip ----------//
 void VgaSDL::flip()
 {
-   static Uint32 ticks = 0;
-   Uint32 cur_ticks = SDL_GetTicks();
-   if (cur_ticks > ticks + 17 || cur_ticks < ticks) {
-      SurfaceSDL *tmp = vga_front.get_buf();
-      SDL_Surface *src = tmp->get_surface();
-      ticks = cur_ticks;
-      SDL_BlitSurface(src, NULL, target, NULL);
-      SDL_UpdateTexture(texture, NULL, target->pixels, window_pitch);
-      SDL_RenderClear(renderer);
-      SDL_RenderCopy(renderer, texture, NULL, NULL);
-      SDL_RenderPresent(renderer);
-   }
 }
 //-------- End of function VgaSDL::flip ----------//
