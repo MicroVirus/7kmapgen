@@ -145,20 +145,6 @@ int Sys::init()
 
    //------- initialize basic vars --------//
 
-	#ifdef BETA
-		debug_session       = misc.is_file_exist("DEBUG.SYS");
-		testing_session     = misc.is_file_exist("TESTING.SYS");
-		scenario_cheat_flag = misc.is_file_exist("CHEAT.SYS");
-	#endif
-
-	#ifdef DEBUG
-		debug_session       = misc.is_file_exist("DEBUG.SYS");
-		testing_session     = misc.is_file_exist("TESTING.SYS");
-		scenario_cheat_flag = misc.is_file_exist("CHEAT.SYS");
-	#endif
-
-//	debug_session       = misc.is_file_exist("DEBUG.SYS");
-
    // set game directory paths and game version
    if (!set_config_dir() || !set_game_dir())
       return FALSE;
