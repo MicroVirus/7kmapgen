@@ -47,9 +47,11 @@ public:
 	void	run_loaded();
 	void	run_test();
 
-private:
+// 7kmapgen: Need these exposed
 	void 	create_ai_nation(int aiNationCount);
 	void 	create_pregame_object();
+
+private:
 
 	int 	create_town(int nationRecno, int raceId, int& xLoc, int& yLoc);
 	int 	create_unit(int townRecno, int unitId, int rankId);

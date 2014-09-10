@@ -211,7 +211,11 @@ private:
 	void		update_view();
 	void		detect_view();
 
+	// 7kmapgen: Need this public
+public:
 	void 		disp_map();
+private:
+
 	void 		disp_zoom();
 
 	int		should_next_frame();
