@@ -20,6 +20,9 @@ DBGLOG_DEFAULT_CHANNEL(mapgen);
 // The map generator entry point
 void mapgen();
 
+// Prototypes:
+SDL_Surface* genmap(int32_t *seed = NULL, SDL_Rect *mapSize = NULL);
+
 // TESTING
 void show_test_window();
 SDL_Window *testWindow;
@@ -46,16 +49,74 @@ void mapgen()
 	config.explore_whole_map = 1;
 
 
+	// Generate the map
 
-	//----------- START OF PER-GAME (PER MAP) CODE -----------//
+	int32_t seed;
+	SDL_Rect mapSize;
+	SDL_Surface *mapSurface;
 
+	seed = 0;
+	mapSurface = genmap(&seed, &mapSize);
+
+	// TESTING - Displays a test window, draws the map to it, waits, then exits
+
+	show_test_window();
+
+	auto screen = SDL_GetWindowSurface(testWindow);
+	if (screen)
+	{
+		SDL_Rect scaledMap = {10, 10, 2 * mapSize.w, 2 * mapSize.h};
+		SDL_BlitScaled(mapSurface, NULL, screen, &scaledMap);
+		//SDL_BlitSurface(mapSurface, NULL, screen, NULL);
+		SDL_UpdateWindowSurface(testWindow);
+		SDL_Delay(5000);
+	}
+
+	// END TESTING
+
+
+	// Restore config
+	config = realConfig;
+}
+
+
+void show_test_window()
+{
+	testWindow = SDL_CreateWindow("Test 7kmapgen", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1000, 800, SDL_WINDOW_SHOWN );
+	if (!testWindow)
+	{
+		ERR("Failed to create window");
+		exit(1);
+	}
+}
+
+
+
+// Returns the map for a given random seed.
+// If seed is NULL or *seed is 0, a time based random seed is generated and returned.
+// If seed is non-NULL, then on return it will contain the random seed
+// If mapSize is non-NULL, the size of the map is returned.
+// The return value is an RGB surface which contains the map. When done with the surface it should be freed.
+SDL_Surface* genmap(int32_t *seed, SDL_Rect *mapSize)
+{
 	game.init();
 	
 	//------ From battle.run(0); // 0-not multiplayer game ------//
 
-	// To use specific seed: info.init_random_seed(869639665); 
-	// Using time-based seed:
-	info.init_random_seed(0);
+	// TODO: When generating time based seed, the code ensures this is non-negative.
+	// But why? Doesn't seem like a seed needs such a restriction at all ...
+	// NOTE: The info.random_seed is the initial seed, and is used for display purposes
+	//       The misc.random_seed is continuously altered and is the current seed value.
+
+	// Initialise the random seed
+	if (seed)
+	{
+		info.init_random_seed(*seed); // Use given random seed
+		*seed = misc.get_random_seed();
+	}
+	else
+		info.init_random_seed(0); // Use new random seed based on time
+
 	// To get the string representation: ltoa( info.random_seed , mapIdStr, 10);
 
 	// Generate map, using seed as set above
@@ -89,59 +150,34 @@ void mapgen()
 	SDL_Surface *tempSurface = SDL_CreateRGBSurface(0, mapWidth, mapHeight, 8, 0, 0, 0, 0);
 	if (!tempSurface)
 	{
-		// TODO: Errors
-		throw "tempSurface";
+		ERR("Failed to create tempSurface"); return NULL;
 	}
 	SDL_Surface *mapSurface = SDL_ConvertSurfaceFormat(tempSurface, SDL_PIXELFORMAT_ARGB8888, 0);
 	SDL_FreeSurface(tempSurface);
 	if (!mapSurface)
 	{
-		// TODO: Errors
-		throw "mapSurface";
+		ERR("Failed to create mapSurface"); return NULL;
 	}
 	SDL_Rect mapRect = {mapX, mapY, mapWidth, mapHeight};
 	SDL_BlitSurface(vga_front.get_buf()->get_surface(), &mapRect, mapSurface, NULL);
 
-	// TESTING - Displays a test window, draws the map to it, waits, then exits
-
-	show_test_window();
-
-	auto screen = SDL_GetWindowSurface(testWindow);
-	if (screen)
-	{
-		SDL_Rect scaledMap = {10, 10, 2 * mapRect.w, 2 * mapRect.h};
-		SDL_BlitScaled(mapSurface, NULL, screen, &scaledMap);
-		//SDL_BlitSurface(mapSurface, NULL, screen, NULL);
-		SDL_UpdateWindowSurface(testWindow);
-		SDL_Delay(5000);
-	}
-	
 	game.deinit();
 
-	//----------- END OF PER-GAME (PER MAP) CODE -----------//
-
-
-	
-	// Restore config
-	config = realConfig;
-}
-
-
-void show_test_window()
-{
-	testWindow = SDL_CreateWindow("Test 7kmapgen", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1000, 800, SDL_WINDOW_SHOWN );
-	if (!testWindow)
+	// Return mapsize
+	if (mapSize)
 	{
-		ERR("Failed to create window");
-		exit(1);
+		mapSize->x = mapSize->y = 0;
+		mapSize->w = mapWidth; mapSize->h = mapHeight;
 	}
+
+	return mapSurface;
 }
 
 
 
-
-// Own versions of Sys::run and Sys::main_loop
-
+//
+// Own version of Sys::run and Sys::main_loop
+//
 // Starts the game, draws the map, and exits again. vga_front contains the drawn map
 void Sys::run_mapgen()
 {
