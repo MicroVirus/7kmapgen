@@ -104,7 +104,8 @@ void MouseSDL::init()
 	// ------- initialize event queue ---------//
 	head_ptr = tail_ptr = 0;
 
-	SDL_ShowCursor(SDL_DISABLE);
+	//7kmapgen:
+	//SDL_ShowCursor(SDL_DISABLE);
 }
 //------------- End of MouseSDL::init -------------//
 
@@ -119,7 +120,8 @@ void MouseSDL::deinit()
 		vga_update_buf = NULL;
 	}
 
-	SDL_ShowCursor(SDL_DISABLE);
+	//7kmapgen:
+	//SDL_ShowCursor(SDL_DISABLE);
 }
 //------------- End of MouseSDL::deinit -------------//
 
@@ -725,140 +727,7 @@ int MouseSDL::release_click(int x1, int y1, int x2, int y2,int buttonId)
 //
 void MouseSDL::poll_event()
 {
-	SDL_Event event;
-	int moveFlag;
-
-	moveFlag = 0;
-
-	while (SDL_PeepEvents(&event,
-			1,
-			SDL_GETEVENT,
-			SDL_KEYDOWN,
-			SDL_JOYBUTTONUP)) {
-
-		MouseEvent ev;
-
-		switch (event.type) {
-		case SDL_MOUSEMOTION:
-		// SDL already accelerates relative mouse motions.
-		// Disable to let the user control speed outside of game.
-#ifdef MOUSE_RELATIVE
-			cur_x += micky_to_displacement(event.motion.xrel);
-			cur_y += micky_to_displacement(event.motion.yrel);
-#else
-			cur_x = event.motion.x;
-			cur_y = event.motion.y;
-#endif
-			if(cur_x < bound_x1)
-				cur_x = bound_x1;
-			if(cur_x > bound_x2)
-				cur_x = bound_x2;
-			if(cur_y < bound_y1)
-				cur_y = bound_y1;
-			if(cur_y > bound_y2)
-				cur_y = bound_y2;
-			moveFlag = 1;
-			break;
-		case SDL_MOUSEBUTTONDOWN:
-			ev.x = cur_x;
-			ev.y = cur_y;
-			ev.time = misc.get_time(); //mouseMsg->dwTimeStamp;
-			ev.scan_code = 0;
-			ev.skey_state = skey_state;
-
-			if (event.button.button == SDL_BUTTON_LEFT) {
-	//			left_press = (event.button.state == SDL_PRESSED);
-				left_press = LEFT_BUTTON_MASK;
-				ev.event_type = LEFT_BUTTON;
-				add_event(&ev);
-			} else if (event.button.button == SDL_BUTTON_RIGHT) {
-				//right_press = (event.button.state == SDL_PRESSED);
-				right_press = RIGHT_BUTTON_MASK;
-				ev.event_type = RIGHT_BUTTON;
-				add_event(&ev);
-			}
-			break;
-		case SDL_MOUSEBUTTONUP:
-			ev.x = cur_x;
-			ev.y = cur_y;
-			ev.time = misc.get_time(); //mouseMsg->dwTimeStamp;
-			ev.scan_code = 0;
-			ev.skey_state = skey_state;
-
-			if (event.button.button == SDL_BUTTON_LEFT) {
-//				left_press = !(event.button.state == SDL_RELEASED);
-				left_press = 0;
-				ev.event_type = LEFT_BUTTON_RELEASE;
-				add_event(&ev);
-				reset_boundary();
-			} else if (event.button.button == SDL_BUTTON_RIGHT) {
-				//right_press = !(event.button.state == SDL_RELEASED);
-				right_press = 0;
-				ev.event_type = RIGHT_BUTTON_RELEASE;
-				add_event(&ev);
-			}
-			break;
-		case SDL_KEYDOWN:
-		{
-			int bypass = 0;
-			int mod = event.key.keysym.mod &
-					(KMOD_CTRL|KMOD_SHIFT|KMOD_ALT);
-			if (mod == KMOD_LALT || mod == KMOD_RALT) {
-				if (event.key.keysym.sym == SDLK_RETURN) {
-					bypass = 1;
-					sys.toggle_full_screen_flag = 1;
-					sys.need_redraw_flag = 1;
-				} else if (event.key.keysym.sym == SDLK_F4) {
-					bypass = 1;
-					sys.signal_exit_flag = 1;
-				} else if (event.key.keysym.sym == SDLK_TAB) {
-					bypass = 1;
-					SDL_Window *window = SDL_GetWindowFromID(event.key.windowID);
-					SDL_MinimizeWindow(window);
-				}
-			} else if (mod == KMOD_LCTRL || mod == KMOD_RCTRL) {
-				if (event.key.keysym.sym == SDLK_g &&
-						!vga.is_full_screen()) {
-					static int grabbed = 0;
-					bypass = 1;
-					SDL_Window *window = SDL_GetWindowFromID(event.key.windowID);
-					if (!grabbed) {
-						SDL_SetWindowGrab(window, SDL_TRUE);
-						grabbed = 1;
-					} else {
-						SDL_SetWindowGrab(window, SDL_FALSE);
-						grabbed = 0;
-					}
-				}
-			}
-			if (!bypass) {
-				update_skey_state();
-				add_key_event(event.key.keysym.sym,
-					      misc.get_time());
-			}
-			break;
-		}
-		case SDL_KEYUP:
-			update_skey_state();
-			break;
-		case SDL_TEXTINPUT:
-		case SDL_JOYAXISMOTION:
-		case SDL_JOYBALLMOTION:
-		case SDL_JOYHATMOTION:
-		case SDL_JOYBUTTONDOWN:
-		case SDL_JOYBUTTONUP:
-		default:
-			ERR("unhandled event %d\n", event.type);
-			break;
-		}
-	}
-
-
-	if(moveFlag)
-	{
-		mouse_cursor.process(cur_x, cur_y);     // repaint mouse cursor
-		power.mouse_handler();
-	}
+	//7kmapgen: Don't let 7kaa code handle events
 }
 //--------- End of MouseSDL::poll_event --------------//
 
@@ -868,31 +737,8 @@ void MouseSDL::poll_event()
 // called after task switch to get the lastest state of ctrl/alt/shift key
 void MouseSDL::update_skey_state()
 {
-	int modstate = SDL_GetModState();
-
+	//7kmapgen: Don't let 7kaa code handle events
 	skey_state = 0;
-	if (modstate & KMOD_LSHIFT)
-		skey_state |= LEFT_SHIFT_KEY_MASK;
-	if (modstate & KMOD_RSHIFT)
-		skey_state |= RIGHT_SHIFT_KEY_MASK;
-	if (modstate & KMOD_LCTRL)
-		skey_state |= LEFT_CONTROL_KEY_MASK;
-	if (modstate & KMOD_RCTRL)
-		skey_state |= RIGHT_CONTROL_KEY_MASK;
-	if (modstate & KMOD_LALT)
-		skey_state |= LEFT_ALT_KEY_MASK;
-	if (modstate & KMOD_RALT)
-#if(defined(FRENCH)||defined(SPANISH))
-		skey_state |= GRAPH_KEY_MASK;
-#else
-		skey_state |= RIGHT_ALT_KEY_MASK;
-#endif
-	if (modstate & KMOD_NUM)
-		skey_state |= NUM_LOCK_STATE_MASK;
-	if (modstate & KMOD_CAPS)
-		skey_state |= CAP_LOCK_STATE_MASK;
-	if (modstate & KMOD_MODE) // Alt Gr key
-		skey_state |= GRAPH_KEY_MASK;
 	skey_state |= INSERT_STATE_MASK; // enable insert mode by default
 }
 //--------- End of MouseSDL::update_skey_state ----------//
