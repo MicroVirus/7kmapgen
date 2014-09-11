@@ -342,7 +342,7 @@ int main(int argc, char **argv)
 	if( !sys.init() )
 		return FALSE;
 
-	err.set_extra_handler( extra_error_handler );   // set extra error handler, save the game when a error happens
+	//err.set_extra_handler( extra_error_handler );   // set extra error handler, save the game when a error happens
 
 	// 7kmapgen: We take over from here
 	//game.main_menu();
