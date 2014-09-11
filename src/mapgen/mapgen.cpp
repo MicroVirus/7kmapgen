@@ -13,19 +13,49 @@
 #include <OOPTMENU.h>
 #include <OINGMENU.h>
 #include <dbglog.h>
+#include <cassert>
 
-// TODO: Apply dbglog patches
 DBGLOG_DEFAULT_CHANNEL(mapgen);
 
-// The map generator entry point
-void mapgen();
-
 // Prototypes:
+void mapgen();
+void generate_map();
 SDL_Surface* genmap(int32_t *seed = NULL, SDL_Rect *mapSize = NULL);
+bool create_window();
+void mapgen_loop();
+void hittest(int button, int x, int y);
+void update_window();
 
-// TESTING
-void show_test_window();
-SDL_Window *testWindow;
+
+enum {MapRegionID = 0, GenerateRegionID, ClipboardRegionID};
+struct MapGenWindow
+{
+	enum {MAX_REGIONS = 10};
+
+	SDL_Window *window;
+	SDL_Renderer *renderer;
+
+	// Regions are parts of the screen that are drawn to or can respond to UI
+	int	region_count;
+	SDL_Rect regions[MAX_REGIONS];
+};
+
+
+// Main window
+namespace {
+	MapGenWindow window;
+	SDL_Texture* mapTexture = NULL;
+	SDL_Texture* generateTexture = NULL;
+	SDL_Texture* clipboardTexture = NULL;
+	bool updating = false; // True if currently generation a new map - this takes a little bit of time, so it's noticeable
+	int32_t seed = 0;
+}
+
+
+// HINTS:
+// - Look at OINGMENU InGameMenu::disp -> font_bible.center_put( MAP_ID_X1, MAP_ID_Y1, MAP_ID_X2, MAP_ID_Y2, str);
+//   It has font drawing. We want font drawing.
+
 
 void mapgen()
 {
@@ -34,8 +64,6 @@ void mapgen()
 
 	sys.is_mp_game = 0;
 	
-	
-
 	// TODO: set config dynamically.
 
 	// World topography depends on:
@@ -48,48 +76,182 @@ void mapgen()
 	// Needed
 	config.explore_whole_map = 1;
 
+	// Create main window
+	if (!create_window())
+		return;
 
 	// Generate the map
+	generate_map();
 
-	int32_t seed;
-	SDL_Rect mapSize;
-	SDL_Surface *mapSurface;
-
-	seed = 0;
-	mapSurface = genmap(&seed, &mapSize);
-
-	// TESTING - Displays a test window, draws the map to it, waits, then exits
-
-	show_test_window();
-
-	auto screen = SDL_GetWindowSurface(testWindow);
-	if (screen)
-	{
-		SDL_Rect scaledMap = {10, 10, 2 * mapSize.w, 2 * mapSize.h};
-		SDL_BlitScaled(mapSurface, NULL, screen, &scaledMap);
-		//SDL_BlitSurface(mapSurface, NULL, screen, NULL);
-		SDL_UpdateWindowSurface(testWindow);
-		SDL_Delay(5000);
-	}
-
-	// END TESTING
-
+	mapgen_loop();
 
 	// Restore config
 	config = realConfig;
 }
 
-
-void show_test_window()
+void generate_map()
 {
-	testWindow = SDL_CreateWindow("Test 7kmapgen", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1000, 800, SDL_WINDOW_SHOWN );
-	if (!testWindow)
+	SDL_Rect mapSize;
+	SDL_Surface *mapSurface;
+
+	updating = true;
+	update_window();
+
+	seed = 0;
+	mapSurface = genmap(&seed, &mapSize);
+
+	SDL_Rect scaledMap = {0, 0, window.regions[MapRegionID].w, window.regions[MapRegionID].h};
+	// Use the 1-2-step trick to get ARGB surface of the right format
+	SDL_Surface *tempSurface = SDL_CreateRGBSurface(0, scaledMap.w, scaledMap.h, 8, 0, 0, 0, 0);
+	SDL_Surface *scaledMapSurface = SDL_ConvertSurfaceFormat(tempSurface, SDL_PIXELFORMAT_ARGB8888, 0);
+	if (!tempSurface || !scaledMapSurface) {ERR("Surface creation failed for copying the map: %s", SDL_GetError()); return;}
+	SDL_BlitScaled(mapSurface, NULL, scaledMapSurface, &scaledMap);
+	SDL_UpdateTexture(mapTexture, NULL, scaledMapSurface->pixels, scaledMapSurface->pitch);
+	SDL_FreeSurface(tempSurface);
+	SDL_FreeSurface(scaledMapSurface);
+
+	updating = false;
+	update_window();
+}
+
+
+bool create_window()
+{
+	enum {	WindowWidth = 900, WindowHeight = 800,
+			MapDrawWidth = 400, MapDrawHeight = 400,
+			GenerateButtonWidth = 180, GenerateButtonHeight = 45,
+			ClipboardButtonWidth = 110, ClipboardButtonHeight = 120};
+
+	window.window = SDL_CreateWindow("7kaa map generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WindowWidth, WindowHeight, SDL_WINDOW_SHOWN );
+	if (!window.window)
 	{
-		ERR("Failed to create window");
-		exit(1);
+		ERR("Failed to create mapgen window: %s", SDL_GetError()); return false;
+	}
+
+	window.renderer = SDL_CreateRenderer(window.window, -1, SDL_RENDERER_ACCELERATED);
+	if (!window.renderer)
+	{
+		ERR("Failed to create the renderer: %s", SDL_GetError()); return false;
+	}
+
+	mapTexture = SDL_CreateTexture(window.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, MapDrawWidth, MapDrawHeight);
+	if (!mapTexture)
+	{
+		ERR("Failed to create texture for map: %s", SDL_GetError()); return false;
+	}
+
+	SDL_Surface *fromBMP = SDL_LoadBMP("7kmapgen/generate.bmp");
+	if (!fromBMP)
+	{
+		ERR("Failed to load Generate button bitmap: %s", SDL_GetError()); return false;
+	}
+	generateTexture = SDL_CreateTextureFromSurface(window.renderer, fromBMP);
+	if (!generateTexture)
+	{
+		ERR("Failed to create texture for Generate button: %s", SDL_GetError()); return false;
+	}
+	SDL_FreeSurface(fromBMP);
+
+	fromBMP = SDL_LoadBMP("7kmapgen/clipboard.bmp");
+	if (!fromBMP)
+	{
+		ERR("Failed to load Generate button bitmap: %s", SDL_GetError()); return false;
+	}
+	clipboardTexture = SDL_CreateTextureFromSurface(window.renderer, fromBMP);
+	if (!clipboardTexture)
+	{
+		ERR("Failed to create texture for Clipboard button: %s", SDL_GetError()); return false;
+	}
+	SDL_FreeSurface(fromBMP);
+
+	// Add regions
+	window.region_count = 3;
+	assert(window.region_count <= MapGenWindow::MAX_REGIONS);
+	// Map
+	window.regions[MapRegionID].x = (WindowWidth - MapDrawWidth) / 2;
+	window.regions[MapRegionID].y = 12;
+	window.regions[MapRegionID].w = MapDrawWidth;
+	window.regions[MapRegionID].h = MapDrawHeight;
+	// Generate button
+	window.regions[GenerateRegionID].x = (WindowWidth - GenerateButtonWidth) / 2;
+	window.regions[GenerateRegionID].y = window.regions[MapRegionID].y + window.regions[MapRegionID].h + 20;
+	window.regions[GenerateRegionID].w = GenerateButtonWidth;
+	window.regions[GenerateRegionID].h = GenerateButtonHeight;
+	// Clipboard button
+	window.regions[ClipboardRegionID].x = window.regions[MapRegionID].x + window.regions[MapRegionID].w + 40;
+	window.regions[ClipboardRegionID].y = window.regions[MapRegionID].y + (window.regions[MapRegionID].h - ClipboardButtonHeight) / 2;
+	window.regions[ClipboardRegionID].w = ClipboardButtonWidth;
+	window.regions[ClipboardRegionID].h = ClipboardButtonHeight;
+
+	SDL_ShowCursor(SDL_ENABLE);
+
+	return true;
+}
+
+void mapgen_loop()
+{
+	SDL_Event e;
+	while (SDL_WaitEvent(&e) != 0)
+	{
+		switch(e.type)
+		{
+		case SDL_QUIT:
+			goto Exit;
+		case SDL_MOUSEBUTTONUP:
+			hittest(e.button.button, e.button.x, e.button.y);
+			break;
+		}
+	}
+	ERR("SDL main loop: %s", SDL_GetError());
+
+Exit:
+	;
+}
+
+void hittest(int button, int x, int y)
+{
+	SDL_Rect const *r;
+	
+	r = &window.regions[GenerateRegionID];
+	if (x >= r->x && x < r->x + r->w && y >= r->y && y < r->y + r->h)
+	{
+		// Hit generate button
+		generate_map();
+	}
+
+	r = &window.regions[ClipboardRegionID];
+	if (x >= r->x && x < r->x + r->w && y >= r->y && y < r->y + r->h)
+	{
+		// Hit clipboard button
+		char szSeed[20];
+		SDL_SetClipboardText(ltoa(seed, szSeed, 10));
 	}
 }
 
+void update_window()
+{
+	int result;
+	result = SDL_SetRenderDrawColor(window.renderer, 216, 216, 216, 0xFF);
+	result = SDL_RenderClear(window.renderer);
+
+	result = SDL_SetRenderDrawColor(window.renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+	result = SDL_RenderCopy(window.renderer, mapTexture, NULL, &window.regions[MapRegionID]);
+	result = SDL_RenderCopy(window.renderer, generateTexture, NULL, &window.regions[GenerateRegionID]);
+	result = SDL_RenderCopy(window.renderer, clipboardTexture, NULL, &window.regions[ClipboardRegionID]);
+
+	// Draw grey over map and buttons
+	if (updating)
+	{
+		result = SDL_SetRenderDrawColor(window.renderer, 0x40, 0x40, 0x40, 0x80);
+		result = SDL_SetRenderDrawBlendMode(window.renderer, SDL_BLENDMODE_BLEND);
+		result = SDL_RenderFillRect(window.renderer, &window.regions[MapRegionID]);
+		result = SDL_RenderFillRect(window.renderer, &window.regions[GenerateRegionID]);
+		result = SDL_RenderFillRect(window.renderer, &window.regions[ClipboardRegionID]);
+		result = SDL_SetRenderDrawBlendMode(window.renderer, SDL_BLENDMODE_NONE);
+	}
+
+	SDL_RenderPresent(window.renderer);
+}
 
 
 // Returns the map for a given random seed.
