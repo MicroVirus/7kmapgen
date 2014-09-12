@@ -55,6 +55,7 @@ namespace {
 // HINTS:
 // - Look at OINGMENU InGameMenu::disp -> font_bible.center_put( MAP_ID_X1, MAP_ID_Y1, MAP_ID_X2, MAP_ID_Y2, str);
 //   It has font drawing. We want font drawing.
+// - Might be able to leverage single player new game menu graphics.
 
 
 void mapgen()
@@ -73,6 +74,8 @@ void mapgen()
 	config.ai_nation_count = MAX_NATION-1; // Hence, on mp or not
 	config.start_up_has_mine_nearby = 0;
 	config.start_up_independent_town = 30; // 7, 15, 30
+	config.start_up_raw_site = 3;
+	config.monster_type = OPTION_MONSTER_DEFENSIVE; // only depends on NONE or not-NONE
 	// Needed
 	config.explore_whole_map = 1;
 
@@ -289,7 +292,7 @@ SDL_Surface* genmap(int32_t *seed, SDL_Rect *mapSize)
 	// the same starting from this point on.
 	// Pretty much all the steps depend on random_start_up, at various places.
 	battle.create_ai_nation(config.ai_nation_count); // depends also on config.random_start_up
-	battle.create_pregame_object(); // depends on config.start_up_has_mine_nearby, config.start_up_independent_town, config.monster_type
+	battle.create_pregame_object(); // depends on config.start_up_has_mine_nearby, config.start_up_independent_town, config.monster_type, config.start_up_raw_site
 	nation_array.update_statistic();
 	sys.set_speed(18);
 	//---- reset cheats ----//
