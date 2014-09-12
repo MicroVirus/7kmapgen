@@ -1,7 +1,7 @@
 Map Generator for Seven Kingdoms: Ancient Adversaries
 -----------------------------------------------------
 
-Version: Proof of concept
+Version: 0.1-alpha
 License: GPLv3
 Based on 7kaa release 2.14.4 (project website: www.7kfans.com)
 
@@ -11,10 +11,21 @@ and get a preview of how it will look. If you like the map, you can copy
 the random seed value that created this map and use it in 7kaa to start
 a game on your chosen map.
 
-The current version is nothing more than a proof of concept. As such, it
-is not yet functional as a map geneator. Next step is to actually make it
-interactive so you can cycle through maps, view the seed value and select
-options that affect map generation.
+To get the exact same map topography, the 'Land Mass' option needs to be set
+to the same value, in addition to using the same seed. To get the same
+placement of objects, the following options need to match:
+ - Land Mass (for topography)
+ - Random Kingdoms (if enabled, a lot(!) of things will be randomised)
+ - Computer Controlled Kingdoms count
+ - Natural Resource at Start count
+ - Natural Resources Nearby?
+ - Independent Villages count
+ - Fryhtans enabled y/n? (None, versus Defensive or Aggressive)
+
+The current version is an alpha release, which can generate random
+moderate-sized maps. The next milestone is to be able to select the map
+options via the UI, and to be able to display the seed value (and, in general,
+be able to render text so all of the above can work).
 
 7kmapgen was created by hijacking 7kaa and reusing almost all of the code.
 Only minor changes to the original codebase have occurred, mostly wrecking
