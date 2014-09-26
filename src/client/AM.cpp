@@ -336,7 +336,7 @@ int main(int argc, char **argv)
 	//----- read command line arguments -----//
 
 	for (int i = 0; i < argc; i++) {
-		// Examin command line here
+		// Examine command line here
 	}
 
 	if( !sys.init() )
@@ -349,6 +349,10 @@ int main(int argc, char **argv)
 	mapgen();
 
 	sys.deinit();
+
+	// [BUG/WORKAROUND] For some reason, stdout fails to flush. It does works for 7kaa, and I can't find a difference...
+	//                  Needed for ERR and MSG logs.
+	fflush(0);
 
 	return 1;
 }
