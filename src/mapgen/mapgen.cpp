@@ -292,6 +292,12 @@ SDL_Surface* genmap(int32_t *seed, SDL_Rect *mapSize)
 	// Base map is done. Now pregame objects are placed, again using the random seed.
 	// Number of AI nations influences all further steps. For multiplayer, the map will not be the same starting from this point on.
 	// Pretty much all the steps depend on random_start_up, at various places.
+
+	// Create nations
+	int humanNationRecno = nation_array.new_nation(NATION_OWN,
+		config.race_id ? config.race_id : 1 + misc.get_time() % MAX_RACE,
+		config.player_nation_color);
+	nation_array.set_human_name(humanNationRecno, config.player_name);
 	battle.create_ai_nation(config.ai_nation_count); // depends also on config.random_start_up
 	// Place all objects
 	battle.create_pregame_object(); // depends on config.random_start_up, config.ai_nation_count, config.start_up_has_mine_nearby, config.start_up_raw_site, config.independent_town_resistance, config.start_up_independent_town, config.monster_type. Roughly in that order.
