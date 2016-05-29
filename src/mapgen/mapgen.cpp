@@ -70,13 +70,15 @@ void mapgen()
 	// World topography depends on:
 	config.land_mass = OPTION_MODERATE; // OPTION_LOW, OPTION_MODERATE, OPTION_HIGH
 	// Game objects layout depends on:
-	config.random_start_up = 0; // Lots depends on this, throughout
+	config.random_start_up = 0; // Lots of things depend on this, throughout the generation process
 	config.ai_nation_count = MAX_NATION-1; // Hence, on mp or not
 	config.start_up_has_mine_nearby = 0;
-	config.start_up_independent_town = 30; // 7, 15, 30
 	config.start_up_raw_site = 3;
+	config.independent_town_resistance = OPTION_LOW;
+	config.start_up_independent_town = 30; // 7, 15, 30
 	config.monster_type = OPTION_MONSTER_DEFENSIVE; // only depends on NONE or not-NONE
-	// Needed
+
+	// Needed for extracting the minimap
 	config.explore_whole_map = 1;
 
 	// Create main window
@@ -287,12 +289,14 @@ SDL_Surface* genmap(int32_t *seed, SDL_Rect *mapSize)
 	// Generate map, using seed as set above
 	world.generate_map();
 
-	// Base map is done. Now pregame objects are placed, again using the random seed
-	// Number of AI nations influences all further steps. For multiplayer, the map will not be
-	// the same starting from this point on.
+	// Base map is done. Now pregame objects are placed, again using the random seed.
+	// Number of AI nations influences all further steps. For multiplayer, the map will not be the same starting from this point on.
 	// Pretty much all the steps depend on random_start_up, at various places.
 	battle.create_ai_nation(config.ai_nation_count); // depends also on config.random_start_up
-	battle.create_pregame_object(); // depends on config.start_up_has_mine_nearby, config.start_up_independent_town, config.monster_type, config.start_up_raw_site
+	// Place all objects
+	battle.create_pregame_object(); // depends on config.random_start_up, config.ai_nation_count, config.start_up_has_mine_nearby, config.start_up_raw_site, config.independent_town_resistance, config.start_up_independent_town, config.monster_type. Roughly in that order.
+
+	// Map has been generated! Initialise the game.
 	nation_array.update_statistic();
 	sys.set_speed(18);
 	//---- reset cheats ----//
